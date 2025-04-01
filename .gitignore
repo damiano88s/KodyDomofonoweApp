@@ -1,0 +1,21 @@
+# Android Studio / IntelliJ
+*.iml
+.idea/
+.gradle/
+build/
+local.properties
+captures/
+.DS_Store
+
+# Profiling
+*.hprof
+
+# Logs
+*.log
+
+# System pliki
+*.swp
+*.swo
+Thumbs.db
+ehthumbs.db
+desktop.ini
