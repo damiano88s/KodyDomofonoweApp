@@ -32,7 +32,7 @@
 
 ## 👤 Autor
 
-Inż. Damian aka **Zgred**  
+Inż. Damian  **Zgred**  
 YouTube: https://www.youtube.com/@StaryZgred2022
 Repozytorium: [github.com/damiano88s/KodyDomofonoweApp](https://github.com/damiano88s/KodyDomofonoweApp)
 
