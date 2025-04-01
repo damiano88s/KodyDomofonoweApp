@@ -28,6 +28,13 @@
 - Apache POI (do odczytu Excela)
 - Android Studio
 
+## 🧭 Plany rozwoju
+
+- 📌 Dodanie edycji istniejących kodów
+- 📤 Eksport danych z aplikacji do Excela
+- 🌐 Synchronizacja z chmurą (np. Google Drive)
+- 🔒 Zabezpieczenie kodów hasłem lub PIN-em
+
 ---
 
 ## 👤 Autor
