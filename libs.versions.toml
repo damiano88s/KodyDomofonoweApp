@@ -1,48 +1,23 @@
 [versions]
-agp = "8.9.0"
-kotlin = "2.0.21"
-coreKtx = "1.15.0"
-junit = "4.13.2"
-junitVersion = "1.2.1"
-espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.10.1"
-composeBom = "2024.10.00"
-room = "2.6.1"
+composeBom = "2024.2.0"
 material = "1.11.0"
-
-
-
+activityCompose = "1.10.1"
+poi = "5.2.3"
+kotlin = "2.0.21"
+agp = "8.9.1"
 
 [libraries]
-androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.8.0" }
-room-runtime = { group = "androidx.room", name = "room-runtime", version = "2.6.1" }
-room-ktx = { group = "androidx.room", name = "room-ktx", version = "2.6.1" }
-room-compiler = { group = "androidx.room", name = "room-compiler", version = "2.6.1" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-apache-poi = { group = "org.apache.poi", name = "poi-ooxml", version = "5.2.3" }
-
-
-
-androidxComposeBom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-androidx-ui = { group = "androidx.compose.ui", name = "ui" }
-androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4", version = "1.5.4" }
-
-
-androidx-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.2.1" }
+androidx_ui = { module = "androidx.compose.ui:ui", version.ref = "composeBom" }
+androidx_ui_graphics = { module = "androidx.compose.ui:ui-graphics", version.ref = "composeBom" }
+androidx_ui_tooling_preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "composeBom" }
+androidx_ui_tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "composeBom" }
+androidx_material3 = { module = "androidx.compose.material3:material3", version.ref = "material" }
+androidx_activity_compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+apache_poi = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
