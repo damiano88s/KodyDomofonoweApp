@@ -47,7 +47,7 @@ Repozytorium: [github.com/damiano88s/KodyDomofonoweApp](https://github.com/damia
 
 ## 🖼️ Zrzut ekranu
 
-![Zrzut ekranu interfejsu](screen.png)
+![Zrzut ekranu interfejsu](Screen.png)
 
 
 
