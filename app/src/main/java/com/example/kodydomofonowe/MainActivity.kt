@@ -25,6 +25,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.ui.Alignment
+
 
 data class DomofonCode(val address: String, val code: String)
 
@@ -42,6 +47,20 @@ class MainActivity : ComponentActivity() {
 
             var address by remember { mutableStateOf(TextFieldValue("")) }
             var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
+            var isDarkTheme by remember { mutableStateOf(false) }
+
+
+            LaunchedEffect(address.text) {
+                if (address.text.isBlank()) {
+                    foundCode = emptyList()
+                } else if (address.text.length >= 3) {
+                    val allCodes = readCodesFromExcelFile(context)
+                    foundCode = allCodes.filter {
+                        it.address.normalizePolish().contains(address.text.normalizePolish())
+                    }
+                }
+            }
+
 
             val pickFileLauncher =
                 rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -54,7 +73,16 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-            Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+            Scaffold(
+                snackbarHost = { SnackbarHost(snackbarHostState) },
+                topBar = {
+                    TopAppBarWithMenu(
+                        isDarkTheme = isDarkTheme,
+                        onThemeToggle = { isDarkTheme = it },
+                        onImportClick = { pickFileLauncher.launch("*/*") }
+                    )
+                }
+            ) { padding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -62,95 +90,90 @@ class MainActivity : ComponentActivity() {
                         .padding(padding)
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = "Kody domofonowe",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 20.dp),
-                        textAlign = TextAlign.Center
-                    )
+                    // Spacer – przestrzeń między napisem a wyszukiwarką
+                    Spacer(modifier = Modifier.height(80.dp)) // Ustawiamy odpowiednią przestrzeń poniżej nagłówka
 
-                    Text(
-                        text = "MTBS / ZNT",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 22.dp),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "Wpisz adres:",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 32.dp, bottom = 4.dp)
-                    )
-
+                    // Pole wyszukiwania
                     TextField(
                         value = address,
                         onValueChange = { address = it },
-                        label = { Text("Ulica i numer") },
+                        placeholder = { Text("Adres") },
+                        textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
+                            .width(250.dp)  // Dostosowanie szerokości
+                            .align(Alignment.CenterHorizontally)  // Wyśrodkowanie w Column
+                            .padding(top = 8.dp, bottom = 8.dp)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            val allCodes = readCodesFromExcelFile(context)
-                            foundCode = allCodes.filter {
-                                it.address.normalizePolish().contains(address.text.normalizePolish())
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
-                    ) {
-                        Text("Szukaj kodu")
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { pickFileLauncher.launch("*/*") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
-                    ) {
-                        Text("Importuj plik Excel")
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
+                    // Wyniki wyszukiwania
                     if (foundCode.isNotEmpty()) {
                         Column {
                             foundCode.forEach { item ->
                                 Text(
                                     text = item.address,
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
-                                Text("kod: ${item.code}", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    text = "kod: ${item.code}",
+                                    fontSize = 18.sp
+                                )
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
                     } else {
-                        Text("Brak wyników")
+                        Text("Brak wyników", modifier = Modifier.padding(top = 8.dp))
                     }
                 }
             }
         }
     }
+
+    // 📥 Import pliku Excel
+    fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
+        try {
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val destinationFile = File(context.filesDir, "kody_domofonowe.xlsx")
+            if (inputStream == null) {
+                Log.e("IMPORT_EXCEL", "InputStream jest nullem")
+                return
+            }
+            destinationFile.outputStream().use { output ->
+                inputStream.copyTo(output)
+            }
+            Log.d("IMPORT_EXCEL", "Plik został zapisany do: ${destinationFile.absolutePath}")
+            onImportFinished()
+        } catch (e: Exception) {
+            Log.e("IMPORT_EXCEL", "Błąd podczas importu: ${e.message}")
+        }
+    }
+
+    // 📖 Czytanie danych z pliku Excel
+    fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
+        val result = mutableListOf<DomofonCode>()
+        try {
+            val file = File(context.filesDir, "kody_domofonowe.xlsx")
+            if (!file.exists()) return result
+            val inputStream = FileInputStream(file)
+            val workbook = XSSFWorkbook(inputStream)
+            val sheet = workbook.getSheetAt(0)
+            for (row in sheet) {
+                if (row.rowNum == 0) continue
+                val address = row.getCell(0)?.stringCellValue ?: continue
+                val code = row.getCell(1)?.stringCellValue ?: continue
+                Log.d("READ_EXCEL", "Wczytano: $address - $code")
+                result.add(DomofonCode(address, code))
+            }
+            workbook.close()
+        } catch (e: Exception) {
+            Log.e("READ_EXCEL", "Błąd podczas odczytu: ${e.message}")
+        }
+        return result
+    }
 }
 
-// 🔄 Normalizacja znaków dla wyszukiwania
 fun String.normalizePolish(): String {
     return this.lowercase()
         .replace("ą", "a")
@@ -164,44 +187,61 @@ fun String.normalizePolish(): String {
         .replace("ż", "z")
 }
 
-// 📥 Import pliku Excel
-fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
-    try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val destinationFile = File(context.filesDir, "kody_domofonowe.xlsx")
-        if (inputStream == null) {
-            Log.e("IMPORT_EXCEL", "InputStream jest nullem")
-            return
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopAppBarWithMenu(
+    isDarkTheme: Boolean,
+    onThemeToggle: (Boolean) -> Unit,
+    onImportClick: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    CenterAlignedTopAppBar(
+        title = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 15.dp)
+            ) {
+                Text("Kody domofonowe", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("MTBS / ZNT", fontSize = 22.sp)
+            }
+        },
+
+        modifier = Modifier.height(100.dp),
+        actions = {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+            }
+
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Importuj plik Excel") },
+                    onClick = {
+                        onImportClick()
+                        menuExpanded = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Tryb jasny") },
+                    onClick = {
+                        onThemeToggle(false)
+                        menuExpanded = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Tryb ciemny") },
+                    onClick = {
+                        onThemeToggle(true)
+                        menuExpanded = false
+                    }
+                )
+            }
         }
-        destinationFile.outputStream().use { output ->
-            inputStream.copyTo(output)
-        }
-        Log.d("IMPORT_EXCEL", "Plik został zapisany do: ${destinationFile.absolutePath}")
-        onImportFinished()
-    } catch (e: Exception) {
-        Log.e("IMPORT_EXCEL", "Błąd podczas importu: ${e.message}")
-    }
+    )
 }
 
-// 📖 Czytanie danych z pliku Excel
-fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
-    val result = mutableListOf<DomofonCode>()
-    try {
-        val file = File(context.filesDir, "kody_domofonowe.xlsx")
-        if (!file.exists()) return result
-        val inputStream = FileInputStream(file)
-        val workbook = XSSFWorkbook(inputStream)
-        val sheet = workbook.getSheetAt(0)
-        for (row in sheet) {
-            if (row.rowNum == 0) continue
-            val address = row.getCell(0)?.stringCellValue ?: continue
-            val code = row.getCell(1)?.stringCellValue ?: continue
-            Log.d("READ_EXCEL", "Wczytano: $address - $code")
-            result.add(DomofonCode(address, code))
-        }
-        workbook.close()
-    } catch (e: Exception) {
-        Log.e("READ_EXCEL", "Błąd podczas odczytu: ${e.message}")
-    }
-    return result
-}
+
