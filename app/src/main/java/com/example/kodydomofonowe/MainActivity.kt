@@ -19,16 +19,17 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 
 
 data class DomofonCode(val address: String, val code: String)
@@ -38,155 +39,173 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        @OptIn(ExperimentalMaterial3Api::class)
-
         setContent {
-            val snackbarHostState = remember { SnackbarHostState() }
-            val coroutineScope = rememberCoroutineScope()
-            val context = this
+            // Uzyskujemy SharedPreferences
+            val sharedPreferences = getSharedPreferences("appPreferences", Context.MODE_PRIVATE)
+            val isDarkTheme = sharedPreferences.getBoolean("isDarkTheme", false)
 
-            var address by remember { mutableStateOf(TextFieldValue("")) }
-            var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
-            var isDarkTheme by remember { mutableStateOf(false) }
+            // Wczytanie preferencji podczas startu aplikacji
+            var currentTheme by remember { mutableStateOf(isDarkTheme) }
 
-
-            LaunchedEffect(address.text) {
-                if (address.text.isBlank()) {
-                    foundCode = emptyList()
-                } else if (address.text.length >= 3) {
-                    val allCodes = readCodesFromExcelFile(context)
-                    foundCode = allCodes.filter {
-                        it.address.normalizePolish().contains(address.text.normalizePolish())
-                    }
-                }
+            // Zmieniamy temat
+            val onThemeToggle: (Boolean) -> Unit = { newTheme ->
+                currentTheme = newTheme
+                // Zapisz preferencję
+                sharedPreferences.edit().putBoolean("isDarkTheme", newTheme).apply()
             }
 
-
-            val pickFileLauncher =
-                rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-                    uri?.let {
-                        importExcelFile(it, context) {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Plik został dodany")
-                            }
-                        }
-                    }
-                }
-
-            Scaffold(
-                snackbarHost = { SnackbarHost(snackbarHostState) },
-                topBar = {
-                    TopAppBarWithMenu(
-                        isDarkTheme = isDarkTheme,
-                        onThemeToggle = { isDarkTheme = it },
-                        onImportClick = { pickFileLauncher.launch("*/*") }
-                    )
-                }
-            ) { padding ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(padding)
-                        .padding(16.dp)
-                ) {
-                    // Spacer – przestrzeń między napisem a wyszukiwarką
-                    Spacer(modifier = Modifier.height(80.dp)) // Ustawiamy odpowiednią przestrzeń poniżej nagłówka
-
-                    // Pole wyszukiwania
-                    TextField(
-                        value = address,
-                        onValueChange = { address = it },
-                        placeholder = { Text("Adres") },
-                        textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
-                        modifier = Modifier
-                            .width(250.dp)  // Dostosowanie szerokości
-                            .align(Alignment.CenterHorizontally)  // Wyśrodkowanie w Column
-                            .padding(top = 8.dp, bottom = 8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Wyniki wyszukiwania
-                    if (foundCode.isNotEmpty()) {
-                        Column {
-                            foundCode.forEach { item ->
-                                Text(
-                                    text = item.address,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "kod: ${item.code}",
-                                    fontSize = 18.sp
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                            }
-                        }
-                    } else {
-                        Text("Brak wyników", modifier = Modifier.padding(top = 8.dp))
-                    }
-                }
-            }
+            AppContent(
+                isDarkTheme = currentTheme,
+                onThemeToggle = onThemeToggle,
+                onImportClick = { /* funkcja importu */ }
+            )
         }
-    }
-
-    // 📥 Import pliku Excel
-    fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
-        try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val destinationFile = File(context.filesDir, "kody_domofonowe.xlsx")
-            if (inputStream == null) {
-                Log.e("IMPORT_EXCEL", "InputStream jest nullem")
-                return
-            }
-            destinationFile.outputStream().use { output ->
-                inputStream.copyTo(output)
-            }
-            Log.d("IMPORT_EXCEL", "Plik został zapisany do: ${destinationFile.absolutePath}")
-            onImportFinished()
-        } catch (e: Exception) {
-            Log.e("IMPORT_EXCEL", "Błąd podczas importu: ${e.message}")
-        }
-    }
-
-    // 📖 Czytanie danych z pliku Excel
-    fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
-        val result = mutableListOf<DomofonCode>()
-        try {
-            val file = File(context.filesDir, "kody_domofonowe.xlsx")
-            if (!file.exists()) return result
-            val inputStream = FileInputStream(file)
-            val workbook = XSSFWorkbook(inputStream)
-            val sheet = workbook.getSheetAt(0)
-            for (row in sheet) {
-                if (row.rowNum == 0) continue
-                val address = row.getCell(0)?.stringCellValue ?: continue
-                val code = row.getCell(1)?.stringCellValue ?: continue
-                Log.d("READ_EXCEL", "Wczytano: $address - $code")
-                result.add(DomofonCode(address, code))
-            }
-            workbook.close()
-        } catch (e: Exception) {
-            Log.e("READ_EXCEL", "Błąd podczas odczytu: ${e.message}")
-        }
-        return result
     }
 }
 
-fun String.normalizePolish(): String {
-    return this.lowercase()
-        .replace("ą", "a")
-        .replace("ć", "c")
-        .replace("ę", "e")
-        .replace("ł", "l")
-        .replace("ń", "n")
-        .replace("ó", "o")
-        .replace("ś", "s")
-        .replace("ź", "z")
-        .replace("ż", "z")
+
+// Funkcja importująca plik Excel
+fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
+    try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val destinationFile = File(context.filesDir, "kody_domofonowe.xlsx")
+        if (inputStream == null) {
+            Log.e("IMPORT_EXCEL", "InputStream jest nullem")
+            return
+        }
+        destinationFile.outputStream().use { output ->
+            inputStream.copyTo(output)
+        }
+        Log.d("IMPORT_EXCEL", "Plik został zapisany do: ${destinationFile.absolutePath}")
+        onImportFinished()
+    } catch (e: Exception) {
+        Log.e("IMPORT_EXCEL", "Błąd podczas importu: ${e.message}")
+    }
 }
 
+// Funkcja do odczytu danych z pliku Excel
+fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
+    val result = mutableListOf<DomofonCode>()
+    try {
+        val file = File(context.filesDir, "kody_domofonowe.xlsx")
+        if (!file.exists()) return result // Jeśli plik nie istnieje, zwróć pustą listę
+        val inputStream = FileInputStream(file)
+        val workbook = XSSFWorkbook(inputStream) // Wczytanie pliku Excel
+        val sheet = workbook.getSheetAt(0) // Zakładając, że dane są na pierwszym arkuszu
+
+        // Iterujemy przez wiersze w arkuszu
+        for (row in sheet) {
+            if (row.rowNum == 0) continue // Pomijamy pierwszy wiersz (nagłówki)
+
+            // Pobieramy dane z pierwszej i drugiej komórki wiersza
+            val address = row.getCell(0)?.stringCellValue ?: continue
+            val code = row.getCell(1)?.stringCellValue ?: continue
+
+            // Dodajemy je do listy
+            result.add(DomofonCode(address, code))
+        }
+        workbook.close() // Zamykamy plik
+    } catch (e: Exception) {
+        Log.e("READ_EXCEL", "Błąd podczas odczytu: ${e.message}")
+    }
+    return result // Zwracamy wynik
+}
+
+// Funkcja composable
+@Composable
+fun AppContent(
+    isDarkTheme: Boolean,
+    onThemeToggle: (Boolean) -> Unit,
+    onImportClick: () -> Unit
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    var address by remember { mutableStateOf(TextFieldValue("")) }
+    var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
+
+    // LaunchedEffect do filtrowania adresów po wpisaniu
+    LaunchedEffect(address.text) {
+        if (address.text.isBlank()) {
+            foundCode = emptyList() // Jeśli pole jest puste, wyczyść wyniki
+        } else if (address.text.length >= 3) {
+            // Zmieniamy filtrację na wczytanie danych z Excela
+            val allCodes = readCodesFromExcelFile(context)
+            foundCode = allCodes.filter {
+                it.address.normalizePolish()
+                    .contains(address.text.normalizePolish()) // Filtrujemy na podstawie tekstu
+            }
+        }
+    }
+
+    val pickFileLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                importExcelFile(it, context) {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Plik został dodany")
+                    }
+                }
+            }
+        }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBarWithMenu(
+                isDarkTheme = isDarkTheme,
+                onThemeToggle = onThemeToggle,
+                onImportClick = onImportClick
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+
+            Spacer(modifier = Modifier.height(60.dp))
+
+            // Pole wyszukiwania
+            TextField(
+                value = address,
+                onValueChange = { address = it },
+                placeholder = { Text("Adres") },
+                textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
+                modifier = Modifier
+                    .width(250.dp) // ustawiasz długość
+                    .align(Alignment.CenterHorizontally) // wyśrodkowanie w Columnie
+                    .padding(top = 8.dp, bottom = 8.dp) // dodajemy padding, aby obniżyć pole
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Wyniki wyszukiwania
+            if (foundCode.isNotEmpty()) {
+                Column {
+                    foundCode.forEach { item ->
+                        Text(
+                            text = item.address,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "kod: ${item.code}",
+                            fontSize = 22.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+            } else {
+                Text("Brak wyników", modifier = Modifier.padding(top = 20.dp))
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -197,18 +216,16 @@ fun TopAppBarWithMenu(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
-    CenterAlignedTopAppBar(
+    TopAppBar(
         title = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 15.dp)
+                modifier = Modifier.padding(top = 0.dp)
             ) {
                 Text("Kody domofonowe", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 Text("MTBS / ZNT", fontSize = 22.sp)
             }
         },
-
-        modifier = Modifier.height(100.dp),
         actions = {
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(Icons.Default.MoreVert, contentDescription = "Menu")
@@ -245,3 +262,16 @@ fun TopAppBarWithMenu(
 }
 
 
+
+fun String.normalizePolish(): String {
+    return this.lowercase()
+        .replace("ą", "a")
+        .replace("ć", "c")
+        .replace("ę", "e")
+        .replace("ł", "l")
+        .replace("ń", "n")
+        .replace("ó", "o")
+        .replace("ś", "s")
+        .replace("ź", "z")
+        .replace("ż", "z")
+}
