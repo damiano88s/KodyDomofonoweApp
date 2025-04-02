@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -15,23 +16,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import androidx.activity.compose.setContent
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 
-
-
-// DomofonCode - prosta klasa danych bez zależności Room
 data class DomofonCode(val address: String, val code: String)
-
-@OptIn(ExperimentalMaterial3Api::class)
 
 class MainActivity : ComponentActivity() {
 
@@ -40,14 +35,12 @@ class MainActivity : ComponentActivity() {
 
         @OptIn(ExperimentalMaterial3Api::class)
 
-
         setContent {
             val snackbarHostState = remember { SnackbarHostState() }
             val coroutineScope = rememberCoroutineScope()
             val context = this
 
             var address by remember { mutableStateOf(TextFieldValue("")) }
-            var code by remember { mutableStateOf(TextFieldValue("")) }
             var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
 
             val pickFileLauncher =
@@ -88,10 +81,8 @@ class MainActivity : ComponentActivity() {
                         textAlign = TextAlign.Center
                     )
 
-
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Podtytuł sekcji
                     Text(
                         text = "Wpisz adres:",
                         fontSize = 18.sp,
@@ -101,10 +92,6 @@ class MainActivity : ComponentActivity() {
                             .padding(start = 32.dp, bottom = 4.dp)
                     )
 
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Pole tekstowe – adres
                     TextField(
                         value = address,
                         onValueChange = { address = it },
@@ -114,42 +101,21 @@ class MainActivity : ComponentActivity() {
                             .padding(horizontal = 32.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    TextField(
-                        value = code,
-                        onValueChange = { code = it },
-                        label = { Text("Kod domofonu") },
+                    Button(
+                        onClick = {
+                            val allCodes = readCodesFromExcelFile(context)
+                            foundCode = allCodes.filter {
+                                it.address.normalizePolish().contains(address.text.normalizePolish())
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 32.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Button(
-                            onClick = { /* Dodaj kod */ },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Dodaj kod")
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Button(
-                            onClick = { /* Szukaj kodu */ },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Szukaj kodu")
-                        }
+                        Text("Szukaj kodu")
                     }
-
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -161,7 +127,6 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Text("Importuj plik Excel")
                     }
-
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -183,71 +148,60 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
-    // Funkcja importująca plik Excel
-    private fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
-        try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val destinationFile = File(context.filesDir, "kody_domofonowe.xlsx")
-            destinationFile.outputStream().use { output ->
-                inputStream?.copyTo(output)
-            }
-            onImportFinished()
-        } catch (e: Exception) {
-            Log.e("IMPORT_EXCEL", "Błąd podczas importu: ${e.message}")
+// 🔄 Normalizacja znaków dla wyszukiwania
+fun String.normalizePolish(): String {
+    return this.lowercase()
+        .replace("ą", "a")
+        .replace("ć", "c")
+        .replace("ę", "e")
+        .replace("ł", "l")
+        .replace("ń", "n")
+        .replace("ó", "o")
+        .replace("ś", "s")
+        .replace("ź", "z")
+        .replace("ż", "z")
+}
+
+// 📥 Import pliku Excel
+fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
+    try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val destinationFile = File(context.filesDir, "kody_domofonowe.xlsx")
+        if (inputStream == null) {
+            Log.e("IMPORT_EXCEL", "InputStream jest nullem")
+            return
         }
-    }
-
-    // Funkcja odczytująca dane z pliku Excel
-    private fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
-        val result = mutableListOf<DomofonCode>()
-        try {
-            val file = File(context.filesDir, "kody_domofonowe.xlsx")
-            if (!file.exists()) return result
-            val inputStream = FileInputStream(file)
-            val workbook = XSSFWorkbook(inputStream)
-            val sheet = workbook.getSheetAt(0)
-            for (row in sheet) {
-                if (row.rowNum == 0) continue
-                val address = row.getCell(0)?.stringCellValue ?: continue
-                val code = row.getCell(1)?.stringCellValue ?: continue
-                result.add(DomofonCode(address, code))
-            }
-            workbook.close()
-        } catch (e: Exception) {
-            Log.e("READ_EXCEL", "Błąd podczas odczytu: ${e.message}")
+        destinationFile.outputStream().use { output ->
+            inputStream.copyTo(output)
         }
-        Log.d("READ", "Wczytano ${result.size} rekordów")
-        return result
+        Log.d("IMPORT_EXCEL", "Plik został zapisany do: ${destinationFile.absolutePath}")
+        onImportFinished()
+    } catch (e: Exception) {
+        Log.e("IMPORT_EXCEL", "Błąd podczas importu: ${e.message}")
     }
+}
 
-    // Funkcja zapisująca dane do pliku Excel
-    private fun saveCodeToExcel(context: Context, address: String, code: String) {
-        try {
-            val file = File(context.filesDir, "kody_domofonowe.xlsx")
-            val workbook = if (file.exists()) {
-                XSSFWorkbook(FileInputStream(file))
-            } else {
-                XSSFWorkbook().apply {
-                    createSheet("Sheet1").createRow(0).apply {
-                        createCell(0).setCellValue("Adres")
-                        createCell(1).setCellValue("Kod")
-                    }
-                }
-            }
-
-            val sheet = workbook.getSheetAt(0)
-            val lastRowNum = sheet.lastRowNum
-            val newRow: Row = sheet.createRow(lastRowNum + 1)
-            newRow.createCell(0).setCellValue(address)
-            newRow.createCell(1).setCellValue(code)
-
-            val outputStream = FileOutputStream(file)
-            workbook.write(outputStream)
-            workbook.close()
-            outputStream.close()
-        } catch (e: Exception) {
-            Log.e("WRITE_EXCEL", "Błąd podczas zapisu: ${e.message}")
+// 📖 Czytanie danych z pliku Excel
+fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
+    val result = mutableListOf<DomofonCode>()
+    try {
+        val file = File(context.filesDir, "kody_domofonowe.xlsx")
+        if (!file.exists()) return result
+        val inputStream = FileInputStream(file)
+        val workbook = XSSFWorkbook(inputStream)
+        val sheet = workbook.getSheetAt(0)
+        for (row in sheet) {
+            if (row.rowNum == 0) continue
+            val address = row.getCell(0)?.stringCellValue ?: continue
+            val code = row.getCell(1)?.stringCellValue ?: continue
+            Log.d("READ_EXCEL", "Wczytano: $address - $code")
+            result.add(DomofonCode(address, code))
         }
+        workbook.close()
+    } catch (e: Exception) {
+        Log.e("READ_EXCEL", "Błąd podczas odczytu: ${e.message}")
     }
+    return result
 }

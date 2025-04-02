@@ -42,8 +42,13 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling:1.5.0")
     implementation("androidx.compose.ui:ui-graphics:1.5.0")
     implementation("org.apache.poi:poi-ooxml:5.2.3")
-
+    implementation("androidx.compose.material:material:1.5.0")
+    implementation("com.google.android.material:material:1.11.0")
 }
+
+
+
+
 repositories {
     google()
     mavenCentral()

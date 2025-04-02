@@ -1,0 +1,29 @@
+// UWAGA: Nie usuwać tego pliku. Motyw aplikacji działa przez MaterialTheme w Compose.
+// Używamy Compose, a nie XML Layoutów. styles.xml nie jest głównym źródłem motywu.
+
+
+package com.example.kodydomofonowe.ui.theme
+
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF4CAF50),       // zielony K
+    onPrimary = Color.White,
+    secondary = Color(0xFFFF9800),     // pomarańczowy D
+    onSecondary = Color.Black,
+    background = Color.White,
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black
+)
+
+@Composable
+fun KodyDomofonoweTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = LightColors,
+        typography = Typography(),
+        content = content
+    )
+}
