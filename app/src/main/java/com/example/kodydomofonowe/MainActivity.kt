@@ -118,7 +118,7 @@ fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
 @Composable
 fun AppContent(
     isDarkTheme: Boolean,
-    onThemeToggle: (Boolean) -> Unit,
+    onThemeToggle: (Boolean) -> Unit
 
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -164,34 +164,38 @@ fun AppContent(
                 }
             )
         }
+
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(padding)
                 .padding(16.dp)
         ) {
 
-            Spacer(modifier = Modifier.height(60.dp))
+            // 🔒 NIEskrolowana część
+            Spacer(modifier = Modifier.height(0.dp))
 
-            // Pole wyszukiwania
             TextField(
                 value = address,
                 onValueChange = { address = it },
                 placeholder = { Text("Adres") },
                 textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
                 modifier = Modifier
-                    .width(250.dp) // ustawiasz długość
-                    .align(Alignment.CenterHorizontally) // wyśrodkowanie w Columnie
-                    .padding(top = 8.dp, bottom = 8.dp) // dodajemy padding, aby obniżyć pole
+                    .width(250.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .padding(vertical = 8.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Wyniki wyszukiwania
-            if (foundCode.isNotEmpty()) {
-                Column {
+            // 🔃 Skrolowana część – tylko wyniki
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (foundCode.isNotEmpty()) {
                     foundCode.forEach { item ->
                         Text(
                             text = item.address,
@@ -204,67 +208,79 @@ fun AppContent(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
+                } else {
+                    Text("Brak wyników", modifier = Modifier.padding(top = 20.dp))
                 }
-            } else {
-                Text("Brak wyników", modifier = Modifier.padding(top = 20.dp))
             }
         }
     }
+
 }
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun TopAppBarWithMenu(
+        isDarkTheme: Boolean,
+        onThemeToggle: (Boolean) -> Unit,
+        onImportClick: () -> Unit
+    ) {
+        var menuExpanded by remember { mutableStateOf(false) }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TopAppBarWithMenu(
-    isDarkTheme: Boolean,
-    onThemeToggle: (Boolean) -> Unit,
-    onImportClick: () -> Unit
-) {
-    var menuExpanded by remember { mutableStateOf(false) }
+        TopAppBar(
+            modifier = Modifier.height(150.dp),
+            title = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth() // <--- dodaj to
+                        .padding(top = 20.dp) // obniżam tekst nagłówka
+                ) {
+                    Text("Kody domofonowe", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Text("MTBS / ZNT", fontSize = 22.sp)
+                }
+            },
+            actions = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(top = 30.dp), // możesz dostosować wysokość
+                    contentAlignment = Alignment.TopEnd
+                ) {
 
-    TopAppBar(
-        title = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 0.dp)
-            ) {
-                Text("Kody domofonowe", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text("MTBS / ZNT", fontSize = 22.sp)
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                    }
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Importuj plik Excel") },
+                        onClick = {
+                            onImportClick()
+                            menuExpanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Tryb jasny") },
+                        onClick = {
+                            onThemeToggle(false)
+                            menuExpanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Tryb ciemny") },
+                        onClick = {
+                            onThemeToggle(true)
+                            menuExpanded = false
+                        }
+                    )
+                }
             }
-        },
-        actions = {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-            }
+        )
+    }
 
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Importuj plik Excel") },
-                    onClick = {
-                        onImportClick()
-                        menuExpanded = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Tryb jasny") },
-                    onClick = {
-                        onThemeToggle(false)
-                        menuExpanded = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Tryb ciemny") },
-                    onClick = {
-                        onThemeToggle(true)
-                        menuExpanded = false
-                    }
-                )
-            }
-        }
-    )
-}
+
 
 
 
