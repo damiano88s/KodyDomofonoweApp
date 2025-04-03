@@ -30,6 +30,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import androidx.compose.ui.platform.LocalContext
+import com.example.kodydomofonowe.ui.theme.MyTheme
+
 
 
 data class DomofonCode(val address: String, val code: String)
@@ -40,31 +42,33 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            // Uzyskujemy SharedPreferences
+
             val sharedPreferences = getSharedPreferences("appPreferences", Context.MODE_PRIVATE)
             val isDarkTheme = sharedPreferences.getBoolean("isDarkTheme", false)
 
-            // Wczytanie preferencji podczas startu aplikacji
+
             var currentTheme by remember { mutableStateOf(isDarkTheme) }
 
-            // Zmieniamy temat
+
             val onThemeToggle: (Boolean) -> Unit = { newTheme ->
                 currentTheme = newTheme
-                // Zapisz preferencję
+
                 sharedPreferences.edit().putBoolean("isDarkTheme", newTheme).apply()
             }
 
-            AppContent(
-                isDarkTheme = currentTheme,
-                onThemeToggle = onThemeToggle,
-                onImportClick = { /* funkcja importu */ }
-            )
+            MyTheme(darkTheme = currentTheme) {
+                AppContent(
+                    isDarkTheme = currentTheme,
+                    onThemeToggle = onThemeToggle,
+                    onImportClick = { /* funkcja importu */ }
+                )
+            }
         }
     }
 }
 
 
-// Funkcja importująca plik Excel
+
 fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
     try {
         val inputStream = context.contentResolver.openInputStream(uri)
@@ -83,35 +87,35 @@ fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
     }
 }
 
-// Funkcja do odczytu danych z pliku Excel
+
 fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
     val result = mutableListOf<DomofonCode>()
     try {
         val file = File(context.filesDir, "kody_domofonowe.xlsx")
-        if (!file.exists()) return result // Jeśli plik nie istnieje, zwróć pustą listę
+        if (!file.exists()) return result
         val inputStream = FileInputStream(file)
-        val workbook = XSSFWorkbook(inputStream) // Wczytanie pliku Excel
-        val sheet = workbook.getSheetAt(0) // Zakładając, że dane są na pierwszym arkuszu
+        val workbook = XSSFWorkbook(inputStream)
+        val sheet = workbook.getSheetAt(0)
 
-        // Iterujemy przez wiersze w arkuszu
+
         for (row in sheet) {
-            if (row.rowNum == 0) continue // Pomijamy pierwszy wiersz (nagłówki)
+            if (row.rowNum == 0) continue
 
-            // Pobieramy dane z pierwszej i drugiej komórki wiersza
+
             val address = row.getCell(0)?.stringCellValue ?: continue
             val code = row.getCell(1)?.stringCellValue ?: continue
 
-            // Dodajemy je do listy
+
             result.add(DomofonCode(address, code))
         }
-        workbook.close() // Zamykamy plik
+        workbook.close()
     } catch (e: Exception) {
         Log.e("READ_EXCEL", "Błąd podczas odczytu: ${e.message}")
     }
-    return result // Zwracamy wynik
+    return result
 }
 
-// Funkcja composable
+
 @Composable
 fun AppContent(
     isDarkTheme: Boolean,
@@ -125,16 +129,16 @@ fun AppContent(
     var address by remember { mutableStateOf(TextFieldValue("")) }
     var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
 
-    // LaunchedEffect do filtrowania adresów po wpisaniu
+
     LaunchedEffect(address.text) {
         if (address.text.isBlank()) {
-            foundCode = emptyList() // Jeśli pole jest puste, wyczyść wyniki
+            foundCode = emptyList()
         } else if (address.text.length >= 3) {
-            // Zmieniamy filtrację na wczytanie danych z Excela
+
             val allCodes = readCodesFromExcelFile(context)
             foundCode = allCodes.filter {
                 it.address.normalizePolish()
-                    .contains(address.text.normalizePolish()) // Filtrujemy na podstawie tekstu
+                    .contains(address.text.normalizePolish())
             }
         }
     }
