@@ -59,8 +59,7 @@ class MainActivity : ComponentActivity() {
             MyTheme(darkTheme = currentTheme) {
                 AppContent(
                     isDarkTheme = currentTheme,
-                    onThemeToggle = onThemeToggle,
-                    onImportClick = { /* funkcja importu */ }
+                    onThemeToggle = onThemeToggle
                 )
             }
         }
@@ -120,7 +119,7 @@ fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
 fun AppContent(
     isDarkTheme: Boolean,
     onThemeToggle: (Boolean) -> Unit,
-    onImportClick: () -> Unit
+
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -160,7 +159,9 @@ fun AppContent(
             TopAppBarWithMenu(
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
-                onImportClick = onImportClick
+                onImportClick = {
+                    pickFileLauncher.launch("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                }
             )
         }
     ) { padding ->
