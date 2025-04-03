@@ -226,7 +226,7 @@ fun AppContent(
         var menuExpanded by remember { mutableStateOf(false) }
 
         TopAppBar(
-            modifier = Modifier.height(150.dp),
+            modifier = Modifier.height(140.dp),
             title = {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,

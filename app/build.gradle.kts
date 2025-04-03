@@ -44,6 +44,10 @@ dependencies {
     implementation("org.apache.poi:poi-ooxml:5.2.3")
     implementation("androidx.compose.material:material:1.4.0")
     implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+
+
 }
 
 
