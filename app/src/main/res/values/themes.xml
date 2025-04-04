@@ -3,9 +3,16 @@
 
     <style name="Theme.KodyDomofonowe" parent="Theme.MaterialComponents.DayNight.NoActionBar">
 
-    <item name="android:windowBackground">@android:color/black</item>
+        <!-- Kolory -->
+        <item name="android:windowBackground">@android:color/black</item>
         <item name="colorPrimary">@color/black</item>
         <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Splash Screen (Android 12+) -->
+        <item name="android:windowSplashScreenBackground">@android:color/black</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_niewidzialna</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/black</item>
+
     </style>
 
 </resources>
