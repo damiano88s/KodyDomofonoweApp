@@ -36,6 +36,18 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.TextField
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.TextAlign
+
+
+
+
+
+
+
 
 
 data class DomofonCode(val address: String, val code: String)
@@ -200,11 +212,17 @@ fun AppContent(
                 value = address,
                 onValueChange = { address = it },
                 placeholder = {
-                    Text("Wpisz nazwe ulicy", color = colorScheme.onSurface.copy(alpha = 0.5f))
+                    Text(
+                        "Wpisz nazwę ulicy",
+                        color = colorScheme.onSurface.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
                 },
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 20.sp,
-                    color = colorScheme.onSurface
+                    color = colorScheme.onSurface,
+                    textAlign = TextAlign.Start // 👈 tekst użytkownika zostaje z lewej
                 ),
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.primary,
@@ -216,10 +234,12 @@ fun AppContent(
                     unfocusedTextColor = colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .width(250.dp)
                     .align(Alignment.CenterHorizontally)
                     .padding(vertical = 8.dp)
+                    .fillMaxWidth(0.8f) // ⬅️ zachowana elastyczna szerokość
             )
+
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -267,33 +287,48 @@ fun TopAppBarWithMenu(
     val colorScheme = MaterialTheme.colorScheme
 
     CenterAlignedTopAppBar(
-        modifier = Modifier.height(60.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(115.dp), // zwiększona wysokość appbara
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = colorScheme.surface,
             titleContentColor = colorScheme.onSurface
         ),
         title = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 35.dp) // odstęp od góry
+            ) {
                 Text(
                     text = "Kody domofonowe",
-                    fontSize = 22.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface
                 )
                 Text(
-                    text = "MTBS / ZNT",
-                    fontSize = 16.sp,
-                    color = colorScheme.onSurface.copy(alpha = 0.8f)
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)) {
+                            append("MTBS")
+                        }
+                        append(" / ")
+                        withStyle(style = SpanStyle(color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)) {
+                            append("ZNT")
+                        }
+                    },
+                    fontSize = 22.sp,
+                    textAlign = TextAlign.Center
                 )
+
             }
-        },
+        }
+
+        ,
         actions = {
-            Box {
-                IconButton(
-                    onClick = { menuExpanded = true },
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 30.dp, end = 4.dp) // 👈 niżej i bliżej krawędzi
+            ) {
+                IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "Menu",
@@ -331,6 +366,10 @@ fun TopAppBarWithMenu(
         }
     )
 }
+
+
+
+
 
 
 
