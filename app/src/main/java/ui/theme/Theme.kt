@@ -24,9 +24,9 @@ private val DarkColors = darkColorScheme(
     onPrimary = Color.Black,
     secondary = Color(0xFFFF9800),
     onSecondary = Color.Black,
-    background = Color(0xFF121212),
+    background = Color.Black,
     onBackground = Color.White,
-    surface = Color(0xFF1E1E1E),
+    surface = Color.Black,
     onSurface = Color.White
 )
 

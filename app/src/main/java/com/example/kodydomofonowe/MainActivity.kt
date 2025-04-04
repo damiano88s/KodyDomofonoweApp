@@ -16,10 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.ui.Alignment
@@ -31,6 +29,27 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import androidx.compose.ui.platform.LocalContext
 import com.example.kodydomofonowe.ui.theme.MyTheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.TextField
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -65,6 +84,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+@Composable
+fun ResponsiveText(
+    text: String,
+    fontSize: TextUnit = 18.sp,
+    fontWeight: FontWeight? = null,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text,
+        fontSize = fontSize,
+        fontWeight = fontWeight,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+    )
+}
+
 
 
 
@@ -115,11 +152,13 @@ fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
 }
 
 
+
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppContent(
     isDarkTheme: Boolean,
     onThemeToggle: (Boolean) -> Unit
-
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -128,16 +167,13 @@ fun AppContent(
     var address by remember { mutableStateOf(TextFieldValue("")) }
     var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
 
-
     LaunchedEffect(address.text) {
         if (address.text.isBlank()) {
             foundCode = emptyList()
         } else if (address.text.length >= 3) {
-
             val allCodes = readCodesFromExcelFile(context)
             foundCode = allCodes.filter {
-                it.address.normalizePolish()
-                    .contains(address.text.normalizePolish())
+                it.address.normalizePolish().contains(address.text.normalizePolish())
             }
         }
     }
@@ -153,7 +189,10 @@ fun AppContent(
             }
         }
 
+    val colorScheme = MaterialTheme.colorScheme
+
     Scaffold(
+        containerColor = colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBarWithMenu(
@@ -164,7 +203,6 @@ fun AppContent(
                 }
             )
         }
-
     ) { padding ->
         Column(
             modifier = Modifier
@@ -172,15 +210,27 @@ fun AppContent(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-
-            // 🔒 NIEskrolowana część
             Spacer(modifier = Modifier.height(0.dp))
 
             TextField(
                 value = address,
                 onValueChange = { address = it },
-                placeholder = { Text("Adres") },
-                textStyle = LocalTextStyle.current.copy(fontSize = 20.sp),
+                placeholder = {
+                    Text("Wpisz nazwe ulicy", color = colorScheme.onSurface.copy(alpha = 0.5f))
+                },
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 20.sp,
+                    color = colorScheme.onSurface
+                ),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = colorScheme.primary,
+                    unfocusedIndicatorColor = colorScheme.primary.copy(alpha = 0.5f),
+                    cursorColor = colorScheme.primary,
+                    focusedContainerColor = colorScheme.surface,
+                    unfocusedContainerColor = colorScheme.surface,
+                    focusedTextColor = colorScheme.onSurface,
+                    unfocusedTextColor = colorScheme.onSurface
+                ),
                 modifier = Modifier
                     .width(250.dp)
                     .align(Alignment.CenterHorizontally)
@@ -189,7 +239,6 @@ fun AppContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🔃 Skrolowana część – tylko wyniki
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -200,56 +249,73 @@ fun AppContent(
                         Text(
                             text = item.address,
                             fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface
                         )
                         Text(
                             text = "kod: ${item.code}",
-                            fontSize = 22.sp
+                            fontSize = 22.sp,
+                            color = colorScheme.onSurface.copy(alpha = 0.85f)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
                 } else {
-                    Text("Brak wyników", modifier = Modifier.padding(top = 20.dp))
+                    Text(
+                        "Brak wyników",
+                        modifier = Modifier.padding(top = 20.dp),
+                        color = colorScheme.onSurface
+                    )
                 }
             }
         }
     }
-
 }
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun TopAppBarWithMenu(
-        isDarkTheme: Boolean,
-        onThemeToggle: (Boolean) -> Unit,
-        onImportClick: () -> Unit
-    ) {
-        var menuExpanded by remember { mutableStateOf(false) }
 
-        TopAppBar(
-            modifier = Modifier.height(140.dp),
-            title = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxWidth() // <--- dodaj to
-                        .padding(top = 20.dp) // obniżam tekst nagłówka
-                ) {
-                    Text("Kody domofonowe", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                    Text("MTBS / ZNT", fontSize = 22.sp)
-                }
-            },
-            actions = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(top = 30.dp), // możesz dostosować wysokość
-                    contentAlignment = Alignment.TopEnd
-                ) {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopAppBarWithMenu(
+    isDarkTheme: Boolean,
+    onThemeToggle: (Boolean) -> Unit,
+    onImportClick: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
 
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                    }
+    CenterAlignedTopAppBar(
+        modifier = Modifier.height(60.dp),
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = colorScheme.surface,
+            titleContentColor = colorScheme.onSurface
+        ),
+        title = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Kody domofonowe",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface
+                )
+                Text(
+                    text = "MTBS / ZNT",
+                    fontSize = 16.sp,
+                    color = colorScheme.onSurface.copy(alpha = 0.8f)
+                )
+            }
+        },
+        actions = {
+            Box {
+                IconButton(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Menu",
+                        tint = colorScheme.onSurface
+                    )
                 }
+
                 DropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false }
@@ -277,14 +343,14 @@ fun AppContent(
                     )
                 }
             }
-        )
-    }
+        }
+    )
+}
 
 
 
 
-
-fun String.normalizePolish(): String {
+    fun String.normalizePolish(): String {
     return this.lowercase()
         .replace("ą", "a")
         .replace("ć", "c")
