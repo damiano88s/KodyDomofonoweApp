@@ -14,8 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.KodyDomofonowe">
 
-        <activity
-            android:name=".SplashActivity"
+        <activity android:name=".SplashScreenActivity"
             android:exported="true"
             android:theme="@style/Theme.KodyDomofonowe">
             <intent-filter>
@@ -23,6 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
 
         <activity android:name=".MainActivity" />
 

@@ -4,59 +4,40 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.*
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.core.tween
-
-
-
-
-class SplashActivity : ComponentActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContent {
-            SplashScreenContent()
-        }
-
-        CoroutineScope(Dispatchers.Main).launch {
-            delay(2000) // ile czasu splash ma trwać
-            startActivity(Intent(this@SplashActivity, MainActivity::class.java))
-            finish()
-        }
-    }
-}
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun SplashScreenContent() {
     val context = LocalContext.current
+    var scale by remember { mutableStateOf(1f) }
 
-    var showFullText by remember { mutableStateOf(false) }
+    // Animacja skalowania
+    val animatedScale by animateFloatAsState(
+        targetValue = scale,
+        animationSpec = tween(durationMillis = 1200),
+        label = "SplashScale"
+    )
 
-    val enterAnim = remember {
-        fadeIn(animationSpec = tween(500)) + slideInHorizontally(
-            initialOffsetX = { -100 },
-            animationSpec = tween(500)
-        )
-    }
-
+    // Przejście do głównej aktywności po zakończeniu animacji + pauza
     LaunchedEffect(Unit) {
-        delay(1000)
-        showFullText = true
-        delay(1000)
+        scale = 3.5f            // Powiększenie KD
+        delay(1000)             // ⏱️ Czas trwania animacji
+        delay(500)             // ⏸️ Pauza z dużym KD – ZMIENIAJ TĘ WARTOŚĆ!
         context.startActivity(Intent(context, MainActivity::class.java))
         (context as? ComponentActivity)?.finish()
     }
@@ -65,63 +46,26 @@ fun SplashScreenContent() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
-        contentAlignment = Alignment.CenterStart
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.padding(start = 32.dp),
-            verticalArrangement = Arrangement.Center
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.scale(animatedScale)
         ) {
-            // Górna linia: K + ODY
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "K",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color(0xFF4CAF50)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                if (showFullText) {
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = enterAnim
-                    ) {
-                        Text(
-                            text = "ODY",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = Color(0xFF4CAF50),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Dolna linia: D + OMOFONOWE
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "D",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color(0xFFFF9800)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                if (showFullText) {
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = enterAnim
-                    ) {
-                        Text(
-                            text = "OMOFONOWE",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color(0xFFFF9800),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
+            Text(
+                text = "K",
+                color = Color(0xFF4CAF50), // Zielony
+                fontSize = 60.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(0.dp))
+            Text(
+                text = "D",
+                color = Color(0xFFFF9800), // Pomarańczowy
+                fontSize = 60.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
-
-
