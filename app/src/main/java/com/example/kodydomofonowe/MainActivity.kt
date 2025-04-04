@@ -35,22 +35,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.TextField
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import androidx.compose.animation.Crossfade
 
 
 data class DomofonCode(val address: String, val code: String)
@@ -61,27 +46,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-
             val sharedPreferences = getSharedPreferences("appPreferences", Context.MODE_PRIVATE)
             val isDarkTheme = sharedPreferences.getBoolean("isDarkTheme", false)
-
-
             var currentTheme by remember { mutableStateOf(isDarkTheme) }
-
 
             val onThemeToggle: (Boolean) -> Unit = { newTheme ->
                 currentTheme = newTheme
-
                 sharedPreferences.edit().putBoolean("isDarkTheme", newTheme).apply()
             }
 
-            MyTheme(darkTheme = currentTheme) {
-                AppContent(
-                    isDarkTheme = currentTheme,
-                    onThemeToggle = onThemeToggle
-                )
+            // 👉 Płynne przejście między trybami
+            Crossfade(targetState = currentTheme) { isDark ->
+                MyTheme(darkTheme = isDark) {
+                    AppContent(
+                        isDarkTheme = isDark,
+                        onThemeToggle = onThemeToggle
+                    )
+                }
             }
         }
+
     }
 }
 @Composable
@@ -259,13 +243,14 @@ fun AppContent(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
-                } else {
+                } else if (address.text.length >= 3) {
                     Text(
                         "Brak wyników",
                         modifier = Modifier.padding(top = 20.dp),
                         color = colorScheme.onSurface
                     )
                 }
+
             }
         }
     }
