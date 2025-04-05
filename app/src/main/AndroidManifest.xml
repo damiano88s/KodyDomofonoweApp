@@ -5,10 +5,9 @@
         android:allowBackup="true"
         android:label="Kody Domofonowe"
 
-        android:icon="@drawable/ic_niewidzialna"
-        android:roundIcon="@drawable/ic_niewidzialna"
 
-
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
 
 
         android:supportsRtl="true"
@@ -16,12 +15,14 @@
 
         <activity android:name=".SplashScreenActivity"
             android:exported="true"
-            android:theme="@style/Theme.KodyDomofonowe">
+            android:theme="@style/Theme.KodyDomofonowe.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+
 
 
         <activity android:name=".MainActivity" />
