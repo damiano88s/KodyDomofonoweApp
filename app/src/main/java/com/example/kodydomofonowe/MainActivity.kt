@@ -183,7 +183,9 @@ fun AppContent(
             return@LaunchedEffect
         }
 
-        // ✅ Jeśli wszystkie znalezione wcześniej wyniki nadal pasują – nie czytaj pliku
+        delay(500) // ⏱️ zawsze czekamy przed przeszukiwaniem
+
+        // ✅ Jeśli obecne wyniki nadal pasują – nie przeszukuj ponownie
         if (
             foundCode.isNotEmpty()
             && foundCode.all { it.address.normalizePolish().contains(currentQuery) }
@@ -192,10 +194,9 @@ fun AppContent(
             return@LaunchedEffect
         }
 
-        // 📚 Jeśli wyniki już nie pasują – dopiero wtedy czytamy z Excela
+        // 📚 Dopiero teraz czytamy Excel
         isSearching = true
         hasSearched = false
-        delay(500)
 
         val allCodes = readCodesFromExcelFile(context)
         foundCode = allCodes.filter {
@@ -206,6 +207,7 @@ fun AppContent(
         isSearching = false
         hasSearched = true
     }
+
 
 
 
