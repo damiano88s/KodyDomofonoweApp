@@ -169,28 +169,47 @@ fun AppContent(
 
     var isSearching by remember { mutableStateOf(false) }
     var hasSearched by remember { mutableStateOf(false) }
+    var lastQuery by remember { mutableStateOf("") }
 
 
     LaunchedEffect(address.text) {
-        if (address.text.length < 3) {
+        val currentQuery = address.text.normalizePolish()
+
+        if (currentQuery.length < 3) {
             foundCode = emptyList()
             isSearching = false
             hasSearched = false
+            lastQuery = ""
             return@LaunchedEffect
         }
 
+        // ✅ Jeśli wszystkie znalezione wcześniej wyniki nadal pasują – nie czytaj pliku
+        if (
+            foundCode.isNotEmpty()
+            && foundCode.all { it.address.normalizePolish().contains(currentQuery) }
+        ) {
+            lastQuery = currentQuery
+            return@LaunchedEffect
+        }
+
+        // 📚 Jeśli wyniki już nie pasują – dopiero wtedy czytamy z Excela
         isSearching = true
         hasSearched = false
         delay(500)
 
         val allCodes = readCodesFromExcelFile(context)
         foundCode = allCodes.filter {
-            it.address.normalizePolish().contains(address.text.normalizePolish())
+            it.address.normalizePolish().contains(currentQuery)
         }
 
+        lastQuery = currentQuery
         isSearching = false
         hasSearched = true
     }
+
+
+
+
 
 
 
