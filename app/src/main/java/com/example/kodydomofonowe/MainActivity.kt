@@ -35,13 +35,39 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.TextField
-import androidx.compose.animation.Crossfade
+
 import androidx.compose.foundation.background
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import com.example.kodydomofonowe.theme.ui.AppTheme
+
+
+
+
+
+
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+
+
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            MainAppWithTheme()
+        }
+    }
+}
 
 
 
@@ -54,34 +80,28 @@ import kotlinx.coroutines.delay
 
 data class DomofonCode(val address: String, val code: String)
 
-class MainActivity : ComponentActivity() {
+@Composable
+fun MainAppWithTheme() {
+    val context = LocalContext.current
+    val sharedPreferences = remember { context.getSharedPreferences("appPreferences", Context.MODE_PRIVATE) }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    var isDarkTheme by remember {
+        mutableStateOf(sharedPreferences.getBoolean("isDarkTheme", false))
+    }
 
-        setContent {
-            val sharedPreferences = getSharedPreferences("appPreferences", Context.MODE_PRIVATE)
-            val isDarkTheme = sharedPreferences.getBoolean("isDarkTheme", false)
-            var currentTheme by remember { mutableStateOf(isDarkTheme) }
+    val onThemeToggle: (Boolean) -> Unit = { newTheme ->
+        isDarkTheme = newTheme
+        sharedPreferences.edit().putBoolean("isDarkTheme", newTheme).apply()
+    }
 
-            val onThemeToggle: (Boolean) -> Unit = { newTheme ->
-                currentTheme = newTheme
-                sharedPreferences.edit().putBoolean("isDarkTheme", newTheme).apply()
-            }
-
-            // 👉 Płynne przejście między trybami
-            Crossfade(targetState = currentTheme) { isDark ->
-                MyTheme(darkTheme = isDark) {
-                    AppContent(
-                        isDarkTheme = isDark,
-                        onThemeToggle = onThemeToggle
-                    )
-                }
-            }
-        }
-
+    AppTheme(darkTheme = isDarkTheme) {
+        AppContent(
+            isDarkTheme = isDarkTheme,
+            onThemeToggle = onThemeToggle
+        )
     }
 }
+
 @Composable
 fun ResponsiveText(
     text: String,
@@ -208,19 +228,6 @@ fun AppContent(
         hasSearched = true
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     val pickFileLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             uri?.let {
@@ -255,6 +262,9 @@ fun AppContent(
         ) {
             Spacer(modifier = Modifier.height(0.dp))
 
+            val searchUnderlineColor = if (isDarkTheme) Color(0xFFFF9800) else colorScheme.primary
+
+
             TextField(
                 value = address,
                 onValueChange = { address = it },
@@ -269,21 +279,21 @@ fun AppContent(
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 20.sp,
                     color = colorScheme.onSurface,
-                    textAlign = TextAlign.Start // 👈 tekst użytkownika zostaje z lewej
+                    textAlign = TextAlign.Start
                 ),
                 colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = colorScheme.primary,
-                    unfocusedIndicatorColor = colorScheme.primary.copy(alpha = 0.5f),
-                    cursorColor = colorScheme.primary,
-                    focusedContainerColor = colorScheme.surface,
-                    unfocusedContainerColor = colorScheme.surface,
+                    focusedIndicatorColor = searchUnderlineColor,
+                    unfocusedIndicatorColor = searchUnderlineColor.copy(alpha = 0.5f),
+                    cursorColor = searchUnderlineColor,
+                    focusedContainerColor = colorScheme.background,
+                    unfocusedContainerColor = colorScheme.background,
                     focusedTextColor = colorScheme.onSurface,
                     unfocusedTextColor = colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(vertical = 8.dp)
-                    .fillMaxWidth(0.8f) // ⬅️ zachowana elastyczna szerokość
+                    .fillMaxWidth(0.8f)
             )
 
 
@@ -341,10 +351,14 @@ fun TopAppBarWithMenu(
         modifier = Modifier
             .fillMaxWidth()
             .height(115.dp), // zwiększona wysokość appbara
+
+
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = colorScheme.surface,
-            titleContentColor = colorScheme.onSurface
-        ),
+            containerColor = MaterialTheme.colorScheme.background, // zamiast .surface
+            titleContentColor = MaterialTheme.colorScheme.onBackground
+        )
+
+        ,
         title = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -387,33 +401,114 @@ fun TopAppBarWithMenu(
                     )
                 }
 
+
+
                 DropdownMenu(
                     expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
+                    onDismissRequest = { menuExpanded = false },
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp))
+                        .padding(vertical = 4.dp)
+                )
+
+                {
+                    // 1. Importuj
+                    val interactionImport = remember { MutableInteractionSource() }
+                    val isPressedImport by interactionImport.collectIsPressedAsState()
+
+                    val bgImport = if (isPressedImport) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    } else {
+                        Color.Transparent
+                    }
+
                     DropdownMenuItem(
-                        text = { Text("Importuj plik Excel") },
+                        text = {
+                            Text(
+                                "Importuj plik Excel",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
                         onClick = {
                             onImportClick()
                             menuExpanded = false
-                        }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(bgImport)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        interactionSource = interactionImport
                     )
+
+
+// 2. Tryb jasny
+                    val interactionLight = remember { MutableInteractionSource() }
+                    val isPressedLight by interactionLight.collectIsPressedAsState()
+
+                    val bgLight = if (isPressedLight) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    } else {
+                        Color.Transparent
+                    }
+
                     DropdownMenuItem(
-                        text = { Text("Tryb jasny") },
+                        text = {
+                            Text(
+                                "Tryb jasny",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
                         onClick = {
                             onThemeToggle(false)
                             menuExpanded = false
-                        }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(bgLight)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        interactionSource = interactionLight
                     )
+
+
+// 3. Tryb ciemny
+                    val interactionDark = remember { MutableInteractionSource() }
+                    val isPressedDark by interactionDark.collectIsPressedAsState()
+
+                    val bgDark = if (isPressedDark) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    } else {
+                        Color.Transparent
+                    }
+
                     DropdownMenuItem(
-                        text = { Text("Tryb ciemny") },
+                        text = {
+                            Text(
+                                "Tryb ciemny",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
                         onClick = {
                             onThemeToggle(true)
                             menuExpanded = false
-                        }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(bgDark)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        interactionSource = interactionDark
                     )
+
+
                 }
             }
+
+
         }
     )
 }

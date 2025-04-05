@@ -1,4 +1,7 @@
-package com.example.kodydomofonowe
+package com.example.kodydomofonowe.ui.theme
+
+
+
 
 import android.content.Intent
 import android.os.Bundle
@@ -19,31 +22,41 @@ import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import com.example.kodydomofonowe.ui.theme.MyTheme
 import androidx.compose.foundation.isSystemInDarkTheme
+import com.example.kodydomofonowe.MainActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.kodydomofonowe.R
+
+
+
 
 
 
 
 class SplashScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            val sharedPreferences = getSharedPreferences("appPreferences", MODE_PRIVATE)
-            val isDarkTheme = sharedPreferences.getBoolean("isDarkTheme", false)
+        // 🛡️ Android 12+ splash – zapobiega błyskowi
+        installSplashScreen()
 
-            setContent {
-                MyTheme(darkTheme = isDarkTheme) {
-                    SplashScreenContent {
-                        startActivity(Intent(this@SplashScreenActivity, MainActivity::class.java))
-                        finish()
-                    }
+        super.onCreate(savedInstanceState)
+
+        val sharedPreferences = getSharedPreferences("appPreferences", MODE_PRIVATE)
+        val isDarkTheme = sharedPreferences.getBoolean("isDarkTheme", false)
+
+        setContent {
+
+            MyTheme(darkTheme = isDarkTheme) {
+            SplashScreenContent {
+                    startActivity(Intent(this@SplashScreenActivity, MainActivity::class.java))
+                    finish()
                 }
             }
-
         }
-
-
     }
 }
+
+
+
+
 
 @Composable
 fun SplashScreenContent(onAnimationFinished: () -> Unit) {
