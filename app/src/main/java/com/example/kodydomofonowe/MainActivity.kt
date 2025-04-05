@@ -167,25 +167,30 @@ fun AppContent(
     var isLoading by remember { mutableStateOf(false) }
     var searchFinished by remember { mutableStateOf(false) }
 
+    var isSearching by remember { mutableStateOf(false) }
+    var hasSearched by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(address.text) {
-        searchFinished = false
-        delay(500)
+        isSearching = false
+        hasSearched = false
+        foundCode = emptyList()
 
-        if (address.text.isBlank()) {
-            foundCode = emptyList()
-            searchFinished = true
-        } else if (address.text.length >= 3) {
+        if (address.text.length >= 3) {
+            isSearching = true
+            delay(500)
+
             val allCodes = readCodesFromExcelFile(context)
             foundCode = allCodes.filter {
                 it.address.normalizePolish().contains(address.text.normalizePolish())
             }
-            searchFinished = true
-        } else {
-            foundCode = emptyList()
-            searchFinished = true
+
+            isSearching = false
+            hasSearched = true
         }
     }
+
+
 
 
 
@@ -265,7 +270,7 @@ fun AppContent(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                if (isLoading) {
+                if (isSearching) {
                     // nic nie pokazujemy podczas ładowania
                 } else if (foundCode.isNotEmpty()) {
                     foundCode.forEach { item ->
@@ -282,13 +287,14 @@ fun AppContent(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
-                } else if (address.text.length >= 3 && searchFinished) {
+                } else if (hasSearched && !isSearching) {
                     Text(
                         "Brak wyników",
                         modifier = Modifier.padding(top = 20.dp),
                         color = colorScheme.onSurface
                     )
                 }
+
 
 
             }
