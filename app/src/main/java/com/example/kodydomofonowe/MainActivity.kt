@@ -41,6 +41,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.delay
+
 
 
 
@@ -162,17 +164,32 @@ fun AppContent(
 
     var address by remember { mutableStateOf(TextFieldValue("")) }
     var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var searchFinished by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(address.text) {
+        searchFinished = false
+        delay(500)
+
         if (address.text.isBlank()) {
             foundCode = emptyList()
+            searchFinished = true
         } else if (address.text.length >= 3) {
             val allCodes = readCodesFromExcelFile(context)
             foundCode = allCodes.filter {
                 it.address.normalizePolish().contains(address.text.normalizePolish())
             }
+            searchFinished = true
+        } else {
+            foundCode = emptyList()
+            searchFinished = true
         }
     }
+
+
+
+
 
     val pickFileLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -248,7 +265,9 @@ fun AppContent(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                if (foundCode.isNotEmpty()) {
+                if (isLoading) {
+                    // nic nie pokazujemy podczas ładowania
+                } else if (foundCode.isNotEmpty()) {
                     foundCode.forEach { item ->
                         Text(
                             text = item.address,
@@ -263,13 +282,14 @@ fun AppContent(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
-                } else if (address.text.length >= 3) {
+                } else if (address.text.length >= 3 && searchFinished) {
                     Text(
                         "Brak wyników",
                         modifier = Modifier.padding(top = 20.dp),
                         color = colorScheme.onSurface
                     )
                 }
+
 
             }
         }
