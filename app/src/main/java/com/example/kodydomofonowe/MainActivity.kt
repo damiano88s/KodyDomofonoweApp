@@ -172,23 +172,27 @@ fun AppContent(
 
 
     LaunchedEffect(address.text) {
-        isSearching = false
-        hasSearched = false
-        foundCode = emptyList()
-
-        if (address.text.length >= 3) {
-            isSearching = true
-            delay(500)
-
-            val allCodes = readCodesFromExcelFile(context)
-            foundCode = allCodes.filter {
-                it.address.normalizePolish().contains(address.text.normalizePolish())
-            }
-
+        if (address.text.length < 3) {
+            foundCode = emptyList()
             isSearching = false
-            hasSearched = true
+            hasSearched = false
+            return@LaunchedEffect
         }
+
+        isSearching = true
+        hasSearched = false
+        delay(500)
+
+        val allCodes = readCodesFromExcelFile(context)
+        foundCode = allCodes.filter {
+            it.address.normalizePolish().contains(address.text.normalizePolish())
+        }
+
+        isSearching = false
+        hasSearched = true
     }
+
+
 
 
 
