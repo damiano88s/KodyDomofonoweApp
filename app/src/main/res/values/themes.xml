@@ -1,26 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.KodyDomofonowe" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.KodyDomofonowe" parent="Theme.Material3.DayNight.NoActionBar">
 
-        <!-- Wyłączenie systemowego splash screena Androida 12+ -->
+        <!-- 🔕 WYŁĄCZENIE SYSTEMOWEGO SPLASH SCREENA (Android 12+) -->
         <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@null</item>
         <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@android:color/transparent</item>
         <item name="android:windowSplashScreenBackground" tools:targetApi="31">@android:color/transparent</item>
 
-        <!-- Kolory -->
-        <item name="android:windowBackground">@color/white</item>
-        <item name="colorPrimary">@color/black</item>
-        <item name="colorOnPrimary">@color/white</item>
-
-    </style>
-
-    <style name="Theme.KodyDomofonowe.Splash" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Transparentne tło, żeby widać było Twoją animację -->
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
+
     </style>
-
-
 </resources>

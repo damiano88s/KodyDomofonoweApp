@@ -9,17 +9,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.KodyDomofonowe">
 
+        <!-- SplashScreenActivity jako pierwszy ekran -->
         <activity
             android:name=".SplashScreenActivity"
-            android:exported="true">
-
-            <!-- TO DODAJEMY ⬇️ -->
+            android:exported="true"
+            android:theme="@style/Theme.KodyDomofonowe">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- MainActivity bez motywu – motyw i tak jest wewnątrz Composable -->
         <activity android:name=".MainActivity" />
+
     </application>
 </manifest>
