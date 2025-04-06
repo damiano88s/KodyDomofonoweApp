@@ -1,11 +1,9 @@
-// UWAGA: Nie usuwać tego pliku. Motyw aplikacji działa przez MaterialTheme w Compose.
-// Używamy Compose, a nie XML Layoutów. styles.xml nie jest głównym źródłem motywu.
-
-
 package com.example.kodydomofonowe.ui.theme
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
@@ -35,13 +33,19 @@ fun MyTheme(
     darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) DarkColors else LightColors
+    val colorScheme = if (darkTheme) DarkColors else LightColors
 
     MaterialTheme(
-        colorScheme = colors,
-        typography = Typography(),
-        content = content
+        colorScheme = colorScheme,
+        typography = Typography(), // możesz dostosować później
+        shapes = Shapes(),         // możesz dostosować później
+        content = {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = colorScheme.background // pełne tło!
+            ) {
+                content()
+            }
+        }
     )
 }
-
-

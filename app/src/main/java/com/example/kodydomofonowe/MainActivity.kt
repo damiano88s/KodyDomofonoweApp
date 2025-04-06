@@ -8,49 +8,47 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.ui.Alignment
+import com.example.kodydomofonowe.theme.ui.AppTheme
+import com.example.kodydomofonowe.ui.theme.MyTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import androidx.compose.ui.platform.LocalContext
-import com.example.kodydomofonowe.ui.theme.MyTheme
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.material3.TextField
-
-import androidx.compose.foundation.background
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.style.TextAlign
-import kotlinx.coroutines.delay
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import com.example.kodydomofonowe.theme.ui.AppTheme
-import androidx.compose.animation.Crossfade
-
-
-
+import com.example.kodydomofonowe.AppContent
 
 
 
@@ -63,10 +61,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MainAppWithTheme()
+            MyTheme(darkTheme = isSystemInDarkTheme()) {
+                MainAppWithTheme() // <- to używamy!
+            }
         }
     }
 }
+
+
+
 
         data class DomofonCode(val address: String, val code: String)
 
@@ -346,19 +349,15 @@ fun TopAppBarWithMenu(
     CenterAlignedTopAppBar(
         modifier = Modifier
             .fillMaxWidth()
-            .height(115.dp), // zwiększona wysokość appbara
-
-
+            .height(115.dp),
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background, // zamiast .surface
-            titleContentColor = MaterialTheme.colorScheme.onBackground
-        )
-
-        ,
+            containerColor = colorScheme.background,
+            titleContentColor = colorScheme.onBackground
+        ),
         title = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 35.dp) // odstęp od góry
+                modifier = Modifier.padding(top = 35.dp)
             ) {
                 Text(
                     text = "Kody domofonowe",
@@ -379,15 +378,12 @@ fun TopAppBarWithMenu(
                     fontSize = 22.sp,
                     textAlign = TextAlign.Center
                 )
-
             }
-        }
-
-        ,
+        },
         actions = {
             Box(
                 modifier = Modifier
-                    .padding(top = 30.dp, end = 4.dp) // 👈 niżej i bliżej krawędzi
+                    .padding(top = 30.dp, end = 4.dp)
             ) {
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
@@ -397,117 +393,51 @@ fun TopAppBarWithMenu(
                     )
                 }
 
-
-
                 DropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.surface)
                         .padding(vertical = 4.dp)
-                )
-
-                {
-                    // 1. Importuj
-                    val interactionImport = remember { MutableInteractionSource() }
-                    val isPressedImport by interactionImport.collectIsPressedAsState()
-
-                    val bgImport = if (isPressedImport) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                    } else {
-                        Color.Transparent
-                    }
-
+                        .shadow(4.dp)
+                ) {
                     DropdownMenuItem(
-                        text = {
-                            Text(
-                                "Importuj plik Excel",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                        leadingIcon = {
+                            Icon(Icons.Default.FileUpload, contentDescription = null)
                         },
+                        text = { Text("Importuj plik Excel") },
                         onClick = {
                             onImportClick()
                             menuExpanded = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(bgImport)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        interactionSource = interactionImport
+                        }
                     )
-
-
-// 2. Tryb jasny
-                    val interactionLight = remember { MutableInteractionSource() }
-                    val isPressedLight by interactionLight.collectIsPressedAsState()
-
-                    val bgLight = if (isPressedLight) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                    } else {
-                        Color.Transparent
-                    }
-
                     DropdownMenuItem(
-                        text = {
-                            Text(
-                                "Tryb jasny",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                        leadingIcon = {
+                            Icon(Icons.Default.WbSunny, contentDescription = null)
                         },
+                        text = { Text("Tryb jasny") },
                         onClick = {
                             onThemeToggle(false)
                             menuExpanded = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(bgLight)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        interactionSource = interactionLight
+                        }
                     )
-
-
-// 3. Tryb ciemny
-                    val interactionDark = remember { MutableInteractionSource() }
-                    val isPressedDark by interactionDark.collectIsPressedAsState()
-
-                    val bgDark = if (isPressedDark) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                    } else {
-                        Color.Transparent
-                    }
-
                     DropdownMenuItem(
-                        text = {
-                            Text(
-                                "Tryb ciemny",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                        leadingIcon = {
+                            Icon(Icons.Default.DarkMode, contentDescription = null)
                         },
+                        text = { Text("Tryb ciemny") },
                         onClick = {
                             onThemeToggle(true)
                             menuExpanded = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(bgDark)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        interactionSource = interactionDark
+                        }
                     )
-
-
                 }
             }
-
-
         }
     )
 }
+
 
 
 
