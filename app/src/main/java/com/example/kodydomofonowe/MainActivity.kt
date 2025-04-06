@@ -45,12 +45,12 @@ import com.example.kodydomofonowe.ui.theme.MyTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-
 import java.io.FileInputStream
-import java.io.FileOutputStream
-import com.example.kodydomofonowe.AppContent
+
 import androidx.compose.material.icons.filled.FileDownload
 import android.os.Environment
+import java.io.File
+import androidx.compose.material.icons.filled.Add
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 
@@ -59,7 +59,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-
+import java.io.FileOutputStream
+import com.example.kodydomofonowe.AppContent
 
 
 import androidx.compose.ui.platform.LocalContext
@@ -68,7 +69,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import java.io.File
+
 
 
 
@@ -301,8 +302,13 @@ fun AppContent(
                 },
                 onExportClick = {
                     showExportDialog = true
+                },
+                onAddCodeClick = {
+                    // tu za chwilę przełączymy ekran
                 }
             )
+
+
         }
     ) { padding ->
         Column(
@@ -459,7 +465,8 @@ fun TopAppBarWithMenu(
     isDarkTheme: Boolean,
     onThemeToggle: (Boolean) -> Unit,
     onImportClick: () -> Unit,
-    onExportClick: () -> Unit
+    onExportClick: () -> Unit,
+    onAddCodeClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
@@ -522,9 +529,44 @@ fun TopAppBarWithMenu(
                 ) {
                     DropdownMenuItem(
                         leadingIcon = {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                        },
+                        text = { Text("Dodaj kod") }, //dodaje kod
+                        onClick = {
+                            onAddCodeClick()
+                            menuExpanded = false
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        leadingIcon = {
+                            Icon(Icons.Default.WbSunny, contentDescription = null)
+                        },
+                        text = { Text("Tryb jasny") },  // tryb jasny
+                        onClick = {
+                            onThemeToggle(false)
+                            menuExpanded = false
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        leadingIcon = {
+                            Icon(Icons.Default.DarkMode, contentDescription = null)
+                        },
+                        text = { Text("Tryb ciemny") },  //    tryb ciemny
+                        onClick = {
+                            onThemeToggle(true)
+                            menuExpanded = false
+                        }
+                    )
+
+
+
+                    DropdownMenuItem(
+                        leadingIcon = {
                             Icon(Icons.Default.FileDownload, contentDescription = null)
                         },
-                        text = { Text("Importuj plik Excel") },
+                        text = { Text("Importuj plik Excel") },   // import pliku
                         onClick = {
                             onImportClick()
                             menuExpanded = false
@@ -534,32 +576,14 @@ fun TopAppBarWithMenu(
                         leadingIcon = {
                             Icon(Icons.Default.FileUpload, contentDescription = null)
                         },
-                        text = { Text("Eksportuj plik Excel") },
+                        text = { Text("Eksportuj plik Excel") },  // eksportuj
                         onClick = {
                             onExportClick()
                             menuExpanded = false
                         }
                     )
-                    DropdownMenuItem(
-                        leadingIcon = {
-                            Icon(Icons.Default.WbSunny, contentDescription = null)
-                        },
-                        text = { Text("Tryb jasny") },
-                        onClick = {
-                            onThemeToggle(false)
-                            menuExpanded = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        leadingIcon = {
-                            Icon(Icons.Default.DarkMode, contentDescription = null)
-                        },
-                        text = { Text("Tryb ciemny") },
-                        onClick = {
-                            onThemeToggle(true)
-                            menuExpanded = false
-                        }
-                    )
+
+
                 }
             }
         }
