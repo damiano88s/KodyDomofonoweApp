@@ -45,10 +45,34 @@ import com.example.kodydomofonowe.ui.theme.MyTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import java.io.File
+
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import com.example.kodydomofonowe.AppContent
+import androidx.compose.material.icons.filled.FileDownload
+import android.os.Environment
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+
+
+
+import androidx.compose.ui.platform.LocalContext
+
+
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import java.io.File
+
+
+
+
 
 
 
@@ -141,6 +165,30 @@ fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
 }
 
 
+
+fun copyFileToDownloads(context: Context, sourceFile: File): Boolean {
+    return try {
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloadsDir.exists()) {
+            downloadsDir.mkdirs()
+        }
+
+        val targetFile = File(downloadsDir, sourceFile.name)
+        sourceFile.copyTo(targetFile, overwrite = true)
+        true
+    } catch (e: Exception) {
+        Log.e("EXPORT_EXCEL", "Błąd podczas kopiowania pliku: ${e.message}")
+        false
+    }
+}
+
+
+
+
+
+
+
+
 fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
     val result = mutableListOf<DomofonCode>()
     try {
@@ -185,11 +233,11 @@ fun AppContent(
     var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var searchFinished by remember { mutableStateOf(false) }
-
     var isSearching by remember { mutableStateOf(false) }
     var hasSearched by remember { mutableStateOf(false) }
     var lastQuery by remember { mutableStateOf("") }
 
+    var showExportDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(address.text) {
         val currentQuery = address.text.normalizePolish()
@@ -202,9 +250,8 @@ fun AppContent(
             return@LaunchedEffect
         }
 
-        delay(500) // ⏱️ zawsze czekamy przed przeszukiwaniem
+        delay(500)
 
-        // ✅ Jeśli obecne wyniki nadal pasują – nie przeszukuj ponownie
         if (
             foundCode.isNotEmpty()
             && foundCode.all { it.address.normalizePolish().contains(currentQuery) }
@@ -213,7 +260,6 @@ fun AppContent(
             return@LaunchedEffect
         }
 
-        // 📚 Dopiero teraz czytamy Excel
         isSearching = true
         hasSearched = false
 
@@ -224,8 +270,6 @@ fun AppContent(
                 .split(" ")
                 .any { it.startsWith(currentQuery) }
         }
-
-
 
         lastQuery = currentQuery
         isSearching = false
@@ -254,6 +298,9 @@ fun AppContent(
                 onThemeToggle = onThemeToggle,
                 onImportClick = {
                     pickFileLauncher.launch("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                },
+                onExportClick = {
+                    showExportDialog = true
                 }
             )
         }
@@ -267,7 +314,6 @@ fun AppContent(
             Spacer(modifier = Modifier.height(0.dp))
 
             val searchUnderlineColor = if (isDarkTheme) Color(0xFFFF9800) else colorScheme.primary
-
 
             TextField(
                 value = address,
@@ -300,8 +346,6 @@ fun AppContent(
                     .fillMaxWidth(0.8f)
             )
 
-
-
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(
@@ -333,12 +377,80 @@ fun AppContent(
                         color = colorScheme.onSurface
                     )
                 }
-
-
-
             }
         }
     }
+
+    if (showExportDialog) {
+        ShowExportDialog(
+            context = context,
+            onDismiss = { showExportDialog = false },
+            onFileSelected = { selectedFile ->
+                val success = copyFileToDownloads(context, selectedFile)
+                coroutineScope.launch {
+                    if (success) {
+                        snackbarHostState.showSnackbar("Plik ${selectedFile.name} zapisany w folderze Pobrane")
+                    } else {
+                        snackbarHostState.showSnackbar("Błąd podczas eksportu pliku")
+                    }
+                }
+            }
+        )
+    }
+}
+
+    fun String.normalizePolish(): String {
+    return this.lowercase()
+        .replace("ą", "a")
+        .replace("ć", "c")
+        .replace("ę", "e")
+        .replace("ł", "l")
+        .replace("ń", "n")
+        .replace("ó", "o")
+        .replace("ś", "s")
+        .replace("ź", "z")
+        .replace("ż", "z")
+}
+
+@Composable
+fun ShowExportDialog(
+    context: Context,
+    onDismiss: () -> Unit,
+    onFileSelected: (File) -> Unit
+) {
+    val excelFiles = remember {
+        context.filesDir
+            .listFiles()
+            ?.filter { it.name.endsWith(".xlsx") }
+            ?.sortedBy { it.name }
+            ?: emptyList()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Wybierz plik do eksportu") },
+        text = {
+            Column {
+                excelFiles.forEach { file ->
+                    TextButton(onClick = {
+                        onFileSelected(file)
+                        onDismiss()
+                    }) {
+                        Text(file.name)
+                    }
+                }
+                if (excelFiles.isEmpty()) {
+                    Text("Brak plików .xlsx do eksportu")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Anuluj")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -346,7 +458,8 @@ fun AppContent(
 fun TopAppBarWithMenu(
     isDarkTheme: Boolean,
     onThemeToggle: (Boolean) -> Unit,
-    onImportClick: () -> Unit
+    onImportClick: () -> Unit,
+    onExportClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
@@ -409,11 +522,21 @@ fun TopAppBarWithMenu(
                 ) {
                     DropdownMenuItem(
                         leadingIcon = {
-                            Icon(Icons.Default.FileUpload, contentDescription = null)
+                            Icon(Icons.Default.FileDownload, contentDescription = null)
                         },
                         text = { Text("Importuj plik Excel") },
                         onClick = {
                             onImportClick()
+                            menuExpanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        leadingIcon = {
+                            Icon(Icons.Default.FileUpload, contentDescription = null)
+                        },
+                        text = { Text("Eksportuj plik Excel") },
+                        onClick = {
+                            onExportClick()
                             menuExpanded = false
                         }
                     )
@@ -444,22 +567,3 @@ fun TopAppBarWithMenu(
 }
 
 
-
-
-
-
-
-
-
-    fun String.normalizePolish(): String {
-    return this.lowercase()
-        .replace("ą", "a")
-        .replace("ć", "c")
-        .replace("ę", "e")
-        .replace("ł", "l")
-        .replace("ń", "n")
-        .replace("ó", "o")
-        .replace("ś", "s")
-        .replace("ź", "z")
-        .replace("ż", "z")
-}
