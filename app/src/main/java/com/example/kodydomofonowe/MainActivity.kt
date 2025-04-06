@@ -218,9 +218,14 @@ fun AppContent(
         hasSearched = false
 
         val allCodes = readCodesFromExcelFile(context)
-        foundCode = allCodes.filter {
-            it.address.normalizePolish().contains(currentQuery)
+        foundCode = allCodes.filter { domofonCode ->
+            domofonCode.address
+                .normalizePolish()
+                .split(" ")
+                .any { it.startsWith(currentQuery) }
         }
+
+
 
         lastQuery = currentQuery
         isSearching = false
