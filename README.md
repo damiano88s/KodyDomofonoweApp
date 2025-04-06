@@ -48,8 +48,8 @@ Repozytorium: [github.com/damiano88s/KodyDomofonoweApp](https://github.com/damia
 ## 🖼️ Zrzut ekranu
 
 ![Screen 1](FOTY/screen.png)
-![Screen 2](FOTY/screen_jasny.png)
-![Screen 3](FOTY/screen_ciemny.png)
+![Screen 2](FOTY/screen_jasny.jpg)
+![Screen 3](FOTY/screen_ciemny.jpg)
 
 
 
