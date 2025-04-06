@@ -1,4 +1,5 @@
-package com.example.kodydomofonowe.ui.theme
+
+package com.example.kodydomofonowe
 
 
 
@@ -26,16 +27,10 @@ import com.example.kodydomofonowe.MainActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.kodydomofonowe.R
 
-
-
-
-
-
-
 class SplashScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // 🛡️ Android 12+ splash – zapobiega błyskowi
-        installSplashScreen()
+
 
         super.onCreate(savedInstanceState)
 

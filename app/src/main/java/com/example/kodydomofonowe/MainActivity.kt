@@ -47,15 +47,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import com.example.kodydomofonowe.theme.ui.AppTheme
+import androidx.compose.animation.Crossfade
 
 
 
 
 
 
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.background
+
 
 
 
@@ -69,16 +68,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
-
-
-
-
-
-
-
-
-data class DomofonCode(val address: String, val code: String)
+        data class DomofonCode(val address: String, val code: String)
 
 @Composable
 fun MainAppWithTheme() {
@@ -94,13 +84,19 @@ fun MainAppWithTheme() {
         sharedPreferences.edit().putBoolean("isDarkTheme", newTheme).apply()
     }
 
-    AppTheme(darkTheme = isDarkTheme) {
-        AppContent(
-            isDarkTheme = isDarkTheme,
-            onThemeToggle = onThemeToggle
-        )
+    Crossfade(targetState = isDarkTheme, label = "theme") { isDark ->
+        AppTheme(darkTheme = isDark) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                AppContent(
+                    isDarkTheme = isDark,
+                    onThemeToggle = onThemeToggle
+                )
+            }
+        }
     }
 }
+
+
 
 @Composable
 fun ResponsiveText(

@@ -4,28 +4,22 @@
     <application
         android:allowBackup="true"
         android:label="Kody Domofonowe"
-
-
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-
-
         android:supportsRtl="true"
         android:theme="@style/Theme.KodyDomofonowe">
 
-        <activity android:name=".SplashScreenActivity"
-            android:exported="true"
-            android:theme="@style/Theme.KodyDomofonowe.Splash">
+        <activity
+            android:name=".SplashScreenActivity"
+            android:exported="true">
+
+            <!-- TO DODAJEMY ⬇️ -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-
-
-
         <activity android:name=".MainActivity" />
-
     </application>
 </manifest>
