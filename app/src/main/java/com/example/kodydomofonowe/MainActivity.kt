@@ -51,6 +51,12 @@ import androidx.compose.material.icons.filled.FileDownload
 import android.os.Environment
 import java.io.File
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import com.example.kodydomofonowe.ShowExportDialog
+import org.apache.poi.ss.usermodel.Sheet
+
+
+
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 
@@ -72,12 +78,18 @@ import kotlinx.coroutines.launch
 
 
 
-
-
-
-
-
-
+fun String.normalizePolish(): String {
+    return this.lowercase()
+        .replace("ą", "a")
+        .replace("ć", "c")
+        .replace("ę", "e")
+        .replace("ł", "l")
+        .replace("ń", "n")
+        .replace("ó", "o")
+        .replace("ś", "s")
+        .replace("ź", "z")
+        .replace("ż", "z")
+}
 
 
 
@@ -165,6 +177,44 @@ fun importExcelFile(uri: Uri, context: Context, onImportFinished: () -> Unit) {
     }
 }
 
+fun saveNewCodeToExcel(context: Context, address: String, code: String): Boolean {
+    return try {
+        val file = File(context.filesDir, "nowe_kody.xlsx")
+        val workbook: XSSFWorkbook
+        val sheet: Sheet
+
+        if (file.exists()) {
+            val inputStream = FileInputStream(file)
+            workbook = XSSFWorkbook(inputStream)
+            sheet = workbook.getSheetAt(0)
+            inputStream.close()
+        } else {
+            workbook = XSSFWorkbook()
+            sheet = workbook.createSheet("Kody")
+
+            // Dodaj nagłówek tylko raz
+            val headerRow = sheet.createRow(0)
+            headerRow.createCell(0).setCellValue("Adres")
+            headerRow.createCell(1).setCellValue("Kod")
+        }
+
+        // Dodaj nowy wiersz
+        val newRow = sheet.createRow(sheet.lastRowNum + 1)
+        newRow.createCell(0).setCellValue(address)
+        newRow.createCell(1).setCellValue(code)
+
+        val outputStream = FileOutputStream(file)
+        workbook.write(outputStream)
+        outputStream.close()
+        workbook.close()
+
+        true
+    } catch (e: Exception) {
+        Log.e("SAVE_NEW_CODE", "Błąd zapisu: ${e.message}")
+        false
+    }
+}
+
 
 
 fun copyFileToDownloads(context: Context, sourceFile: File): Boolean {
@@ -190,6 +240,8 @@ fun copyFileToDownloads(context: Context, sourceFile: File): Boolean {
 
 
 
+
+
 fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
     val result = mutableListOf<DomofonCode>()
     try {
@@ -206,6 +258,7 @@ fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
 
             val address = row.getCell(0)?.stringCellValue ?: continue
             val code = row.getCell(1)?.stringCellValue ?: continue
+            Log.d("EXCEL", "Wczytano: $address -> $code")
 
 
             result.add(DomofonCode(address, code))
@@ -219,6 +272,101 @@ fun readCodesFromExcelFile(context: Context): List<DomofonCode> {
 
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddCodeScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val colorScheme = MaterialTheme.colorScheme
+    var isSaving by remember { mutableStateOf(false) }
+
+    var address by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Dodaj nowy kod") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Wróć")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorScheme.surface,
+                    titleContentColor = colorScheme.onSurface,
+                    navigationIconContentColor = colorScheme.onSurface
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = colorScheme.background
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Top
+        ) {
+            OutlinedTextField(
+                value = address,
+                onValueChange = { address = it },
+                label = { Text("Adres") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = code,
+                onValueChange = { code = it },
+                label = { Text("Kod domofonu") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            var isSaving by remember { mutableStateOf(false) }
+
+            Button(
+                onClick = {
+                    isSaving = true
+                    coroutineScope.launch {
+                        val success = saveNewCodeToExcel(context, address, code)
+                        if (success) {
+                            snackbarHostState.showSnackbar("Kod został zapisany")
+                            address = ""
+                            code = ""
+                        } else {
+                            snackbarHostState.showSnackbar("Błąd przy zapisie")
+                        }
+                        isSaving = false
+                    }
+                },
+                enabled = address.isNotBlank() && code.isNotBlank() && !isSaving,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Zapisz") // nie zmieniamy napisu
+            }
+
+
+
+
+
+
+
+
+
+
+        }
+    }
+}
+
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -229,6 +377,7 @@ fun AppContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    Log.d("SPRAWDZ_PLIK", "Plik istnieje: ${File(context.filesDir, "kody_domofonowe.xlsx").exists()}")
 
     var address by remember { mutableStateOf(TextFieldValue("")) }
     var foundCode by remember { mutableStateOf<List<DomofonCode>>(emptyList()) }
@@ -237,9 +386,19 @@ fun AppContent(
     var isSearching by remember { mutableStateOf(false) }
     var hasSearched by remember { mutableStateOf(false) }
     var lastQuery by remember { mutableStateOf("") }
-
     var showExportDialog by remember { mutableStateOf(false) }
+    var isAddCodeScreenVisible by remember { mutableStateOf(false) }
 
+    val pickFileLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                importExcelFile(it, context) {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Plik został dodany")
+                    }
+                }
+            }
+        }
     LaunchedEffect(address.text) {
         val currentQuery = address.text.normalizePolish()
 
@@ -251,20 +410,14 @@ fun AppContent(
             return@LaunchedEffect
         }
 
-        delay(500)
-
-        if (
-            foundCode.isNotEmpty()
-            && foundCode.all { it.address.normalizePolish().contains(currentQuery) }
-        ) {
-            lastQuery = currentQuery
-            return@LaunchedEffect
-        }
+        delay(300)
 
         isSearching = true
         hasSearched = false
 
         val allCodes = readCodesFromExcelFile(context)
+        Log.d("EXCEL", "Wczytano ${allCodes.size} kodów")
+
         foundCode = allCodes.filter { domofonCode ->
             domofonCode.address
                 .normalizePolish()
@@ -277,111 +430,102 @@ fun AppContent(
         hasSearched = true
     }
 
-    val pickFileLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let {
-                importExcelFile(it, context) {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Plik został dodany")
-                    }
-                }
-            }
-        }
 
     val colorScheme = MaterialTheme.colorScheme
 
-    Scaffold(
-        containerColor = colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBarWithMenu(
-                isDarkTheme = isDarkTheme,
-                onThemeToggle = onThemeToggle,
-                onImportClick = {
-                    pickFileLauncher.launch("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                },
-                onExportClick = {
-                    showExportDialog = true
-                },
-                onAddCodeClick = {
-                    // tu za chwilę przełączymy ekran
-                }
-            )
-
-
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            Spacer(modifier = Modifier.height(0.dp))
-
-            val searchUnderlineColor = if (isDarkTheme) Color(0xFFFF9800) else colorScheme.primary
-
-            TextField(
-                value = address,
-                onValueChange = { address = it },
-                placeholder = {
-                    Text(
-                        "Wpisz nazwę ulicy",
-                        color = colorScheme.onSurface.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                },
-                textStyle = LocalTextStyle.current.copy(
-                    fontSize = 20.sp,
-                    color = colorScheme.onSurface,
-                    textAlign = TextAlign.Start
-                ),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = searchUnderlineColor,
-                    unfocusedIndicatorColor = searchUnderlineColor.copy(alpha = 0.5f),
-                    cursorColor = searchUnderlineColor,
-                    focusedContainerColor = colorScheme.background,
-                    unfocusedContainerColor = colorScheme.background,
-                    focusedTextColor = colorScheme.onSurface,
-                    unfocusedTextColor = colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(vertical = 8.dp)
-                    .fillMaxWidth(0.8f)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+    if (isAddCodeScreenVisible) {
+        AddCodeScreen(onBack = { isAddCodeScreenVisible = false })
+    } else {
+        Scaffold(
+            containerColor = colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                TopAppBarWithMenu(
+                    isDarkTheme = isDarkTheme,
+                    onThemeToggle = onThemeToggle,
+                    onImportClick = {
+                        pickFileLauncher.launch("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    },
+                    onExportClick = {
+                        showExportDialog = true
+                    },
+                    onAddCodeClick = {
+                        isAddCodeScreenVisible = true
+                    }
+                )
+            }
+        ) { padding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .padding(padding)
+                    .padding(16.dp)
             ) {
-                if (isSearching) {
-                    // nic nie pokazujemy podczas ładowania
-                } else if (foundCode.isNotEmpty()) {
-                    foundCode.forEach { item ->
+                val searchUnderlineColor = if (isDarkTheme) Color(0xFFFF9800) else colorScheme.primary
+
+
+                TextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    placeholder = {
                         Text(
-                            text = item.address,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
+                            "Wpisz nazwę ulicy",
+                            color = colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    },
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 20.sp,
+                        color = colorScheme.onSurface,
+                        textAlign = TextAlign.Start
+                    ),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = searchUnderlineColor,
+                        unfocusedIndicatorColor = searchUnderlineColor.copy(alpha = 0.5f),
+                        cursorColor = searchUnderlineColor,
+                        focusedContainerColor = colorScheme.background,
+                        unfocusedContainerColor = colorScheme.background,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(vertical = 8.dp)
+                        .fillMaxWidth(0.8f)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    if (isSearching) {
+                        // nic nie pokazujemy podczas ładowania
+                    } else if (foundCode.isNotEmpty()) {
+                        foundCode.forEach { item ->
+                            Text(
+                                text = item.address,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurface
+                            )
+                            Text(
+                                text = "kod: ${item.code}",
+                                fontSize = 22.sp,
+                                color = colorScheme.onSurface.copy(alpha = 0.85f)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    } else if (hasSearched && !isSearching) {
+                        Text(
+                            "Brak wyników",
+                            modifier = Modifier.padding(top = 20.dp),
                             color = colorScheme.onSurface
                         )
-                        Text(
-                            text = "kod: ${item.code}",
-                            fontSize = 22.sp,
-                            color = colorScheme.onSurface.copy(alpha = 0.85f)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
                     }
-                } else if (hasSearched && !isSearching) {
-                    Text(
-                        "Brak wyników",
-                        modifier = Modifier.padding(top = 20.dp),
-                        color = colorScheme.onSurface
-                    )
                 }
             }
         }
@@ -394,69 +538,16 @@ fun AppContent(
             onFileSelected = { selectedFile ->
                 val success = copyFileToDownloads(context, selectedFile)
                 coroutineScope.launch {
-                    if (success) {
-                        snackbarHostState.showSnackbar("Plik ${selectedFile.name} zapisany w folderze Pobrane")
-                    } else {
-                        snackbarHostState.showSnackbar("Błąd podczas eksportu pliku")
-                    }
+                    snackbarHostState.showSnackbar(
+                        if (success)
+                            "Plik ${selectedFile.name} zapisany w folderze Pobrane"
+                        else
+                            "Błąd podczas eksportu pliku"
+                    )
                 }
             }
         )
     }
-}
-
-    fun String.normalizePolish(): String {
-    return this.lowercase()
-        .replace("ą", "a")
-        .replace("ć", "c")
-        .replace("ę", "e")
-        .replace("ł", "l")
-        .replace("ń", "n")
-        .replace("ó", "o")
-        .replace("ś", "s")
-        .replace("ź", "z")
-        .replace("ż", "z")
-}
-
-@Composable
-fun ShowExportDialog(
-    context: Context,
-    onDismiss: () -> Unit,
-    onFileSelected: (File) -> Unit
-) {
-    val excelFiles = remember {
-        context.filesDir
-            .listFiles()
-            ?.filter { it.name.endsWith(".xlsx") }
-            ?.sortedBy { it.name }
-            ?: emptyList()
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Wybierz plik do eksportu") },
-        text = {
-            Column {
-                excelFiles.forEach { file ->
-                    TextButton(onClick = {
-                        onFileSelected(file)
-                        onDismiss()
-                    }) {
-                        Text(file.name)
-                    }
-                }
-                if (excelFiles.isEmpty()) {
-                    Text("Brak plików .xlsx do eksportu")
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Anuluj")
-            }
-        }
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -531,42 +622,37 @@ fun TopAppBarWithMenu(
                         leadingIcon = {
                             Icon(Icons.Default.Add, contentDescription = null)
                         },
-                        text = { Text("Dodaj kod") }, //dodaje kod
+                        text = { Text("Dodaj kod") },
                         onClick = {
                             onAddCodeClick()
                             menuExpanded = false
                         }
                     )
-
                     DropdownMenuItem(
                         leadingIcon = {
                             Icon(Icons.Default.WbSunny, contentDescription = null)
                         },
-                        text = { Text("Tryb jasny") },  // tryb jasny
+                        text = { Text("Tryb jasny") },
                         onClick = {
                             onThemeToggle(false)
                             menuExpanded = false
                         }
                     )
-
                     DropdownMenuItem(
                         leadingIcon = {
                             Icon(Icons.Default.DarkMode, contentDescription = null)
                         },
-                        text = { Text("Tryb ciemny") },  //    tryb ciemny
+                        text = { Text("Tryb ciemny") },
                         onClick = {
                             onThemeToggle(true)
                             menuExpanded = false
                         }
                     )
-
-
-
                     DropdownMenuItem(
                         leadingIcon = {
                             Icon(Icons.Default.FileDownload, contentDescription = null)
                         },
-                        text = { Text("Importuj plik Excel") },   // import pliku
+                        text = { Text("Importuj plik Excel") },
                         onClick = {
                             onImportClick()
                             menuExpanded = false
@@ -576,18 +662,56 @@ fun TopAppBarWithMenu(
                         leadingIcon = {
                             Icon(Icons.Default.FileUpload, contentDescription = null)
                         },
-                        text = { Text("Eksportuj plik Excel") },  // eksportuj
+                        text = { Text("Eksportuj plik Excel") },
                         onClick = {
                             onExportClick()
                             menuExpanded = false
                         }
                     )
-
-
                 }
             }
         }
     )
 }
 
+@Composable
+fun ShowExportDialog(
+    context: Context,
+    onDismiss: () -> Unit,
+    onFileSelected: (File) -> Unit
+) {
+    val excelFiles = remember {
+        context.filesDir
+            .listFiles()
+            ?.filter { it.name.endsWith(".xlsx") }
+            ?.sortedBy { it.name }
+            ?: emptyList()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Wybierz plik do eksportu") },
+        text = {
+            Column {
+                excelFiles.forEach { file ->
+                    TextButton(onClick = {
+                        onFileSelected(file)
+                        onDismiss()
+                    }) {
+                        Text(file.name)
+                    }
+                }
+                if (excelFiles.isEmpty()) {
+                    Text("Brak plików .xlsx do eksportu")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Anuluj")
+            }
+        }
+    )
+}
 
